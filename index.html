@@ -1,0 +1,92 @@
+<html ng-app="app">
+<head>
+    <script type="text/javascript">
+
+    var myWebSocket;
+    addEventListener("load", (ev) => {
+        document.getElementById("key").value = localStorage.getItem('key') ? localStorage.getItem('key') : 'XXXXXX'
+    })
+    const modes = {
+        "zappy": 4,
+        "vibey": 3,
+        "beep": 2
+    }
+    function connectToWS() {
+        var endpoint = document.getElementById("endpoint").value;
+        var key = document.getElementById("key").value;
+        if (myWebSocket !== undefined) {
+            myWebSocket.close()
+        }
+        localStorage.setItem('key', key)
+
+        myWebSocket = new WebSocket(`${endpoint}?key=${key}`);
+
+        myWebSocket.onmessage = function(event) {
+            var leng;
+            if (event.data.size === undefined) {
+                leng = event.data.length
+            } else {
+                leng = event.data.size
+            }
+            console.log("onmessage. size: " + leng + ", content: " + event.data);
+            document.getElementById("log").innerText = document.getElementById("log").innerText +`Got ${event.data}`;
+        }
+
+        myWebSocket.onopen = function(evt) {
+            console.log("onopen.");
+        };
+
+        myWebSocket.onclose = function(evt) {
+            console.log("onclose.");
+        };
+
+        myWebSocket.onerror = function(evt) {
+            console.log("Error!");
+        };
+    }
+
+    function sendMsg() {
+        console.log(buildCmd())
+        document.getElementById("log").innerText =  document.getElementById("log").innerText + `Sent ${buildCmd()}`;
+        myWebSocket.send(buildCmd());
+    }
+    function buildCmd() {
+        var mode = document.getElementById("mode").value;
+        var level = document.getElementById("level").value;
+        var duration = document.getElementById("duration").value;
+        if (modes[mode] !== undefined && level > 0 && duration > 0 ) {
+            return `{"mode": "${mode}","level": ${parseInt(level)},"duration": ${parseInt(duration)}}`
+        }
+    }
+
+    function closeConn() {
+        myWebSocket.close();
+    }
+
+    </script>
+</head>
+<body>
+
+    <form>
+        connection to: <input type="text" id="endpoint" name="endpoint" value="ws://45.83.107.127:4000/ws_requester"  style="width: 200px" ><br>
+        authentication: <input type="text" id="key" name="key" value="XXXXXXX"  style="width: 200px" ><br>
+    </form>
+
+    <input type="button" onclick="connectToWS()" value="connect" /><br><br>
+
+    <form>
+        Command:<br>
+        (Accepted modes: zappy, vibey, beep)<br>
+        mode: <input type="text" id="mode" name="mode" value="zappy"  style="width: 200px" ><br>
+        level: <input type="text" id="level" name="level" value="10"  style="width: 200px" ><br>
+        duration in ms: <input type="text" id="duration" name="duration" value="500"  style="width: 200px" ><br>
+    </form>
+    </form>
+
+    <input type="button" onclick="sendMsg()" value="Send message" />
+
+    <input type="button" onclick="closeConn()" value="Close connection" />
+    <textarea name="log" id="log" cols="30" rows="10"></textarea>
+
+</body>
+</html>
